@@ -42,6 +42,7 @@ export default class App extends Component {
             continuous: true,
           };
           database.replicate(`http://${SG_URL}/${DB_NAME}`, DB_NAME, REPLICATION_OPTIONS);
+          database.replicate(DB_NAME, `http://${SG_URL}/${DB_NAME}`, REPLICATION_OPTIONS);
           database.getInfo()
             .then(res => {
               database.listen({
@@ -56,7 +57,7 @@ export default class App extends Component {
         })
         .then(() => database.getDocuments({include_docs: true}))
         .then(res => this.setState({
-          dataSource: this.state.dataSource.cloneWithRows(res.rows.map(row => row.doc).filter(doc => doc.type === 'id')),
+          dataSource: this.state.dataSource.cloneWithRows(res.rows.filter(row => row.doc.type === 'id' && row.doc._attachments).map(row => { const doc = row.doc;  const uri = database.getAttachmentUri(doc._id, 'photo'); doc.uri = 'http://' + uri.substring(uri.indexOf('@')+1); console.log(doc); return row.doc;})),
         }))
         .catch(e => console.log('ERROR', e));
     })
@@ -66,7 +67,8 @@ export default class App extends Component {
     camera.takePicture()
       .then(data => this.setState({
           image: {
-            uri: `file://${data.uri}`
+            uri: `file://${data.uri}`,
+            path: data.uri,
           },
         })
       )
@@ -80,11 +82,28 @@ export default class App extends Component {
       image: this.state.image,
     }
     database.createDocument(doc)
-      .then(data => console.log('DATA', data))
+      .then(doc => {
+        console.log('DOC', doc);
+        database.saveAttachment(doc.id, doc.rev, 'photo', this.state.image.uri, 'image/jpg');
+      })
+      .then((doc, docv) => console.log('ATT', doc, docv))
       .catch(error => console.log('ERROR', error));
   }
 
-  renderDoc = doc => <Image style={{width: 50, height: 50}} source={doc.image} />;
+  renderDoc = doc => {
+    // const uriAt = database.getAttachmentUri(doc._id, 'photo');
+    // console.log(doc._id, doc._rev, uriAt);
+    return (
+      <View>
+        <Image
+          style={{width: 50, height: 50, borderRadius: 5}}
+          source={{ uri: doc.uri }}
+        />
+        <Text>{JSON.stringify(doc)}</Text>
+        <Text>{doc.uri}</Text>
+      </View>
+    )
+  };
 
   render() {
     return (
