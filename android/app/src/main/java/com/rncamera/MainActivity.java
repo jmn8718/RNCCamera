@@ -1,6 +1,7 @@
 package com.rncamera;
 
 import com.facebook.react.ReactActivity;
+import me.fraserxu.rncouchbaselite.ReactCBLiteManager;
 
 public class MainActivity extends ReactActivity {
 
