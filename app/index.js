@@ -11,6 +11,9 @@ import {
 
 const camera = NativeModules.CameraModule;
 
+import Item from './components/item';
+import Preview from './components/preview';
+
 import {
   manager,
   ReactCBLite,
@@ -18,6 +21,8 @@ import {
 
 const SG_URL = '10.111.4.12:4984';
 const DB_NAME = 'db';
+
+const DOC_TYPE = 'expense';
 
 let database;
 
@@ -29,6 +34,9 @@ export default class App extends Component {
     this.state = {
       image: undefined,
       error: undefined,
+      capturing: false,
+      saving: false,
+      data: [],
       dataSource: ds.cloneWithRows([]),
     }
   }
@@ -51,84 +59,102 @@ export default class App extends Component {
               });
               database.changesEventEmitter.on('changes', function (e) {
                 this.setState({sequence: e.last_seq});
+                console.log(e);
+                this.getDocuments();
               }.bind(this));
             })
             .catch(e => console.log('ERROR INFO', e))
         })
-        .then(() => database.getDocuments({include_docs: true}))
-        .then(res => this.setState({
-          dataSource: this.state.dataSource.cloneWithRows(res.rows.filter(row => row.doc.type === 'id' && row.doc._attachments).map(row => { const doc = row.doc;  const uri = database.getAttachmentUri(doc._id, 'photo'); doc.uri = 'http://' + uri.substring(uri.indexOf('@')+1); console.log(doc); return row.doc;})),
-        }))
+        .then(() => this.getDocuments())
         .catch(e => console.log('ERROR', e));
     })
   }
 
-  onTakePicture = () => {
-    camera.takePicture()
-      .then(data => this.setState({
-          image: {
-            uri: `file://${data.uri}`,
-            path: data.uri,
-          },
+  getDocuments = () => {
+    console.log('get the docs')
+    database.getDocuments({include_docs: true})
+      .then(res => {
+        const data = res.rows
+          .filter(row => row.doc.type === DOC_TYPE && row.doc._attachments && row.doc.timestamp)
+          .map(row => {
+            const doc = row.doc;
+            const uri = database.getAttachmentUri(doc._id, 'photo');
+            doc.uri = uri;
+            return doc;
+          })
+          .sort((a, b) => a.timestamp < b.timestamp)
+        this.setState({
+          data,
+          dataSource: this.state.dataSource.cloneWithRows(data),
         })
-      )
-      .catch(error => this.setState({ error }));
+      })
+      .catch(e => console.log('ERROR', e));
+  }
+
+  onTakePicture = () => {
+    if (!this.state.capturing) {
+      this.setState({ capturing: true });
+      camera.takePicture()
+        .then(data => this.setState({
+            image: {
+              uri: `file://${data.uri}`,
+              path: data.uri,
+            },
+            capturing: false,
+          })
+        )
+        .catch(error => this.setState({
+          error,
+          capturing: false,
+        }));
+    }
   }
 
   onSaveDoc = () => {
-    console.log('SAVE', this.state.image)
-    const doc = {
-      type: 'id',
-      image: this.state.image,
+    if (!this.state.saving) {
+      this.setState({ saving: true });
+      const doc = {
+        type: DOC_TYPE,
+        image: this.state.image,
+        timestamp: Date.now(),
+        action: 'waiting',
+      }
+      database.createDocument(doc)
+        .then(doc => {
+          database.saveAttachment(doc.id, doc.rev, 'photo', this.state.image.uri, 'image/jpg');
+        })
+        .then(() => {
+          this.setState({
+            saving: false,
+            image: undefined,
+          });
+        })
+        .catch(error => this.setState({
+          saving: false,
+          error,
+        }));
     }
-    database.createDocument(doc)
-      .then(doc => {
-        console.log('DOC', doc);
-        database.saveAttachment(doc.id, doc.rev, 'photo', this.state.image.uri, 'image/jpg');
-      })
-      .then((doc, docv) => console.log('ATT', doc, docv))
-      .catch(error => console.log('ERROR', error));
   }
-
-  renderDoc = doc => {
-    // const uriAt = database.getAttachmentUri(doc._id, 'photo');
-    // console.log(doc._id, doc._rev, uriAt);
-    return (
-      <View>
-        <Image
-          style={{width: 50, height: 50, borderRadius: 5}}
-          source={{ uri: doc.uri }}
-        />
-        <Text>{JSON.stringify(doc)}</Text>
-        <Text>{doc.uri}</Text>
-      </View>
-    )
-  };
 
   render() {
     return (
       <View style={styles.container}>
-        <TouchableHighlight onPress={this.onTakePicture}>
-          <Text style={styles.welcome}>
-            TAKE A PHOTO
-          </Text>
-        </TouchableHighlight>
-        {this.state.image &&
-          <Image
-            style={{width: 250, height: 250}}
-            source={this.state.image}
-          />
-        }
-        {this.state.image &&
-          <TouchableHighlight onPress={this.onSaveDoc}>
+        {!this.state.capturing &&
+          <TouchableHighlight onPress={this.onTakePicture}>
             <Text style={styles.welcome}>
-              SAVE
+              TAKE A PHOTO
             </Text>
           </TouchableHighlight>
         }
+        {this.state.image && !this.state.saving &&
+          <Preview
+            image={this.state.image}
+            onSave={this.onSaveDoc}
+          />
+        }
         <ListView
           dataSource={this.state.dataSource}
-          renderRow={this.renderDoc}
+          renderRow={rowData => <Item doc={rowData} />}
           style={styles.listView}
           enableEmptySections
         />
@@ -149,9 +175,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     margin: 10,
   },
-  instructions: {
-    textAlign: 'center',
-    color: '#333333',
-    marginBottom: 5,
-  },
+  listView: {
+    alignSelf: 'stretch',
+  }
 });
