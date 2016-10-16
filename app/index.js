@@ -5,13 +5,12 @@ import {
   View,
   TouchableHighlight,
   NativeModules,
-  Image,
   ListView,
 } from 'react-native';
 
 const camera = NativeModules.CameraModule;
 
-import Item from './components/item';
+import ListItems from './components/listItems';
 import Preview from './components/preview';
 
 import {
@@ -152,12 +151,7 @@ export default class App extends Component {
             onSave={this.onSaveDoc}
           />
         }
-        <ListView
-          dataSource={this.state.dataSource}
-          renderRow={rowData => <Item doc={rowData} />}
-          style={styles.listView}
-          enableEmptySections
-        />
+        <ListItems dataSource={this.state.dataSource} />
       </View>
     );
   }
@@ -175,7 +169,4 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     margin: 10,
   },
-  listView: {
-    alignSelf: 'stretch',
-  }
 });
