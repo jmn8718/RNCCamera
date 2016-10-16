@@ -10,8 +10,10 @@ import {
 
 const camera = NativeModules.CameraModule;
 
-import ListItems from './components/listItems';
-import Preview from './components/preview';
+import {
+  ListItems,
+  Preview
+} from './components';
 
 import {
   manager,
