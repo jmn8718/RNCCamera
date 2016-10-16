@@ -12,7 +12,8 @@ const camera = NativeModules.CameraModule;
 
 import {
   ListItems,
-  Preview
+  Preview,
+  Toolbar,
 } from './components';
 
 import {
@@ -140,20 +141,15 @@ export default class App extends Component {
   render() {
     return (
       <View style={styles.container}>
-        {!this.state.capturing &&
-          <TouchableHighlight onPress={this.onTakePicture}>
-            <Text style={styles.welcome}>
-              TAKE A PHOTO
-            </Text>
-          </TouchableHighlight>
-        }
-        {this.state.image && !this.state.saving &&
+        <Toolbar title="RNCCamera" onIconPress={this.onTakePicture}/>
+        {this.state.image ?
           <Preview
             image={this.state.image}
             onSave={this.onSaveDoc}
-          />
+            saving={this.state.saving}
+          /> :
+          <ListItems dataSource={this.state.dataSource} />
         }
-        <ListItems dataSource={this.state.dataSource} />
       </View>
     );
   }
@@ -162,13 +158,8 @@ export default class App extends Component {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    paddingTop: 56,
+    justifyContent: 'flex-start',
     backgroundColor: '#F5FCFF',
-  },
-  welcome: {
-    fontSize: 20,
-    textAlign: 'center',
-    margin: 10,
   },
 });

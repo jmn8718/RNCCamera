@@ -1,17 +1,18 @@
 import React, { Component } from 'react';
 import {
   StyleSheet,
-  Text,
   View,
   Image,
-  TouchableHighlight,
 } from 'react-native';
+
+import { Button, Subheader } from 'react-native-material-design';
 
 export default class Preview extends Component {
 
   componentWillMount() {
 
   }
+
   render() {
     const { image, onSave, saving } = this.props;
 
@@ -21,11 +22,14 @@ export default class Preview extends Component {
           style={{width: 250, height: 250}}
           source={this.props.image}
         />
-        <TouchableHighlight onPress={onSave}>
-          <Text style={styles.instructions}>
-            SAVE
-          </Text>
-        </TouchableHighlight>
+        {!saving ?
+          <Button
+            text="SAVE"
+            raised={true}
+            onPress={onSave}
+          /> :
+          <Subheader text="SAVING ..."/>
+        }
       </View>
     );
   }
