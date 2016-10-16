@@ -43,7 +43,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   image: {
-    width: 30,
+    width: 350,
     height: 350,
     borderRadius: 5,
   },
