@@ -43,13 +43,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   image: {
-    width: 250,
-    height: 250,
+    width: 30,
+    height: 350,
     borderRadius: 5,
-  },
-  instructions: {
-    textAlign: 'center',
-    color: '#333333',
-    marginBottom: 5,
   },
 });

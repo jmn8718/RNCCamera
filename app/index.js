@@ -45,6 +45,7 @@ export default class App extends Component {
 
   componentDidMount() {
     ReactCBLite.init(url => {
+      console.log(url)
       database = new manager(url, DB_NAME);
       database.createDatabase()
         .then(res => {

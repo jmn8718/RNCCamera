@@ -21,6 +21,7 @@ export default class Item extends Component {
           <Text>TYPE: {doc.type}</Text>
           <Text>TS: {doc.timestamp}</Text>
           <Text>ACTION: {doc.action}</Text>
+          <Text>TYPE: {doc.uri}</Text>
         </View>
       </View>
     );
@@ -31,7 +32,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     flexDirection: 'row',
-    margin: 4,
+    marginTop: 4,
     padding: 8,
     backgroundColor: 'whitesmoke',
     borderRadius: 5,
